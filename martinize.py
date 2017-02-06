@@ -4,7 +4,7 @@
 # EDITABLE SECTIONS ARE MARKED WITH #@# 
 
 
-version="2.5"
+version="2.5.TAW160730"
 authors=["Djurre de Jong", "Jaakko J. Uusitalo", "Tsjerk A. Wassenaar"]
 
 # Parameters are defined for the following (protein) forcefields:
@@ -3052,9 +3052,13 @@ def rubberBands(atomList,lowerBound,upperBound,decayFactor,decayPower,forceConst
             
             if d2 < u2:
                 dij  = math.sqrt(d2)
-                fscl = decayFunction(dij,lowerBound,decayFactor,decayPower)
-                if fscl*forceConstant > minimumForce:
-                    out.append({"atoms":(bi,bj),"parameters": (dij,"RUBBER_FC*%f"%fscl)})
+                fscl = forceConstant*decayFunction(dij,lowerBound,decayFactor,decayPower)
+                if fscl > minimumForce:
+                    out.append({
+                        "atoms":(bi[0],bj[0]),
+                        "parameters": (dij,"%f"%fscl),
+                        "comments": "%s%d%s(%s)-%s%d%s(%s)"%(bi[3],bi[2],bi[4],bi[7],bj[3],bj[2],bj[4],bj[7])
+                    })
     return out
 
 
@@ -4088,7 +4092,8 @@ class Topology:
         if bonds:
             # Add a CPP style directive to allow control over the elastic network
             out.append("#ifndef NO_RUBBER_BANDS")
-            out.append("#ifndef RUBBER_FC\n#define RUBBER_FC %f\n#endif"%self.options['ElasticMaximumForce'])
+            # The GMX preprocessor keeps refusing to correctly parse equations or macros... TAW160730
+            # out.append("#ifndef RUBBER_FC\n#define RUBBER_FC %f\n#endif"%self.options['ElasticMaximumForce'])
             out.extend(bonds)
             out.append("#endif")
 
@@ -4359,7 +4364,7 @@ class Topology:
         # a straightforward manner after importing this script as module.
         if rubber and chain:
             rubberList = rubberBands(
-                [(i[0],j[4:7]) for i,j in zip(self.atoms,chain.cg()) if i[4] in ElasticBeads],
+                [(i,j[4:7]) for i,j in zip(self.atoms,chain.cg()) if i[4] in ElasticBeads],
                 ElasticLowerBound,ElasticUpperBound,
                 ElasticDecayFactor,ElasticDecayPower,
                 ElasticMaximumForce,ElasticMinimumForce)
@@ -4982,7 +4987,7 @@ def main(options):
                 if options['ElasticNetwork']:
                     rubberType = options['ForceField'].EBondType
                     rubberList = rubberBands(
-                        [(i[0],j) for i,j in zip(top.atoms,coords) if i[4] in options['ElasticBeads']],
+                        [(i,j) for i,j in zip(top.atoms,coords) if i[4] in options['ElasticBeads']],
                         options['ElasticLowerBound'],options['ElasticUpperBound'],
                         options['ElasticDecayFactor'],options['ElasticDecayPower'],
                         options['ElasticMaximumForce'],options['ElasticMinimumForce'])
