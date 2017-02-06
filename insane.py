@@ -739,7 +739,6 @@ usrnames  = []
 usrheads  = []
 usrlinks  = []
 usrtails  = []
-usrcharg  = []
 
 
 # Description
@@ -818,7 +817,6 @@ Define additional lipid types (same format as in lipid-martini-itp-v01.py)
     ("-alhead",   Option(usrheads.append,  1,  None, "Additional lipid head specification string")),
     ("-allink",   Option(usrlinks.append,  1,  None, "Additional lipid linker specification string")),
     ("-altail",   Option(usrtails.append,  1,  None, "Additional lipid tail specification string")),
-    ("-alcharge", Option(usrcharg.append,  1,  None, "Additional lipid charge")),
     ("-m",        Option(mollist.append,   1,  None, "Read molecule definitions from file")),
     ]
     
@@ -1483,6 +1481,7 @@ if lipL:
     kick       = options["-rand"].value
 
     # Build the membrane
+    membrane.charge = 0
     for leaflet,leaf_lip,lipdx,lipdy in [leaf_up,leaf_lo]:
         for lipid, pos in leaf_lip:
             # Increase the residue number by one
@@ -1508,6 +1507,8 @@ if lipL:
                 membrane.coord.append((nx[i],ny[i],az[i]))
                 membrane.atoms.append((at[i],lipid,resi,0,0,0))
                 atid += 1
+            membrane.charge += lipid.charge
+    print "; Membrane charge:", membrane.charge
 
     # Now move everything to the center of the box before adding solvent
     mz  = pbcz/2
